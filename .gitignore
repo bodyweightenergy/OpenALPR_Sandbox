@@ -30,3 +30,7 @@ obj/
 [Dd]ebug*/
 [Rr]elease*/
 Ankh.NoLoad
+
+# Specific NuGet packages
+packages*/
+OpenTK*
