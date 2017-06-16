@@ -18,9 +18,11 @@ namespace OpenALPR_CS
         private static AlprNet alpr;
         private static Capture cap;
         private static Image<Bgr, byte> frame = new Image<Bgr, byte>(1,1);
-        private static Mat frameInput;
+        private static Mat frameInput = new Mat();
+        private static UMat frameInputU = new UMat();
+        private static UMat frameOutput = new UMat();
         private static int frameIndex = 0;
-        private static FpsCounter fps = new FpsCounter(10);
+        private static FpsCounter fps = new FpsCounter(20);
         private static string plateOutputDirectory = @"C:\opencv\data\plates";
 
         static void Main(string[] args)
@@ -30,6 +32,8 @@ namespace OpenALPR_CS
                 Directory.CreateDirectory(plateOutputDirectory);
             }
 
+            CvInvoke.UseOpenCL = true;
+
             alpr = new AlprNet("us", @"C:\openalpr_64\openalpr.conf", @"C:\openalpr_64\runtime_data");
             if (!alpr.IsLoaded())
             {
@@ -37,14 +41,11 @@ namespace OpenALPR_CS
                 return;
             }
             // Optionally apply pattern matching for a particular region
-            alpr.DefaultRegion = "ny";
+            alpr.DefaultRegion = "ks";
             alpr.TopN = 1;
 
 
-            string imgPath = @"C:\opencv\data\tag.jpg";
-            //FindPlates(new Image<Bgr, byte>(imgPath));
-            //Thread.Sleep(2000);
-            cap = new Capture(@"c:\opencv\data\sidewalk2.mp4");
+            cap = new Capture(@"c:\opencv\data\honda.mp4");
             //cap = new Capture();
             int skipFrame = 0;
             int skipFPS = 0;
@@ -52,18 +53,22 @@ namespace OpenALPR_CS
             while (true)
             {
                 fps.Restart();
+
                 frameInput = cap.QueryFrame();
                 skipFrame++;
                 skipFPS++;
-                if (skipFrame % 30 == 0)
+                if (skipFrame % 1 == 0)
                 {
                     if (frameInput != null)
                     {
                         frameIndex++;
-                        frame = frameInput.ToImage<Bgr, byte>();
-                        frame = frame.Rotate(180, new Bgr(0, 0, 0));
+                        frameInputU = frameInput.ToUMat(Emgu.CV.CvEnum.AccessType.ReadWrite);
+                        //frame = frameInput.ToImage<Bgr, byte>();
+                        //umat = frame.ToUMat();
+                        CvInvoke.Sobel(frameInputU, frameOutput, Emgu.CV.CvEnum.DepthType.Cv8U, 3, 3, 31);
+                        //frame = frame.Rotate(270, new Bgr(0, 0, 0));
                         //frame = frame.Resize(0.5, Emgu.CV.CvEnum.Inter.Area);
-                        FindPlates(frame);
+                        //FindPlates(frame);
                     }
                     else
                     {
@@ -71,29 +76,24 @@ namespace OpenALPR_CS
                         break;
                     }
                 }
+
                 fps.Stop();
-                if(skipFPS % 100 == 0)
+                if(skipFPS % 10 == 0)
                 {
                     Console.WriteLine(fps.GetFPS().ToString("0.00") + " fps");
                 }
             }
             cap.Stop();
             Console.WriteLine("No more capture.");
-            CvInvoke.WaitKey();
+            //CvInvoke.WaitKey();
 
-        }
-
-        private static void ImageGrabbed(object sender, EventArgs e)
-        {
-            cap.Retrieve(frame);
-            FindPlates(frame);
         }
 
         private static void FindPlates(Image<Bgr, byte> input)
         {
-            Rectangle ROI = new Rectangle(0, (int)(input.Height * 0.2), input.Width, (int)(input.Height * 0.6));
-            frame.Draw(ROI, new Bgr(0, 255, 0), 1);
-            var results = alpr.Recognize(input.Bitmap, new List<Rectangle>(){ROI});
+            //Rectangle ROI = new Rectangle(0, (int)(input.Height * 0.1), input.Width, (int)(input.Height * 0.9));
+            //frame.Draw(ROI, new Bgr(0, 255, 0), 1);
+            var results = alpr.Recognize(input.Bitmap); //, new List<Rectangle>(){ROI});
             
 
             //if(results.Plates.Count == 0 ) Console.WriteLine("No plates found.");
