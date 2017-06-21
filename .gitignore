@@ -25,6 +25,7 @@ OS junk files
 *.pyc
 *.xml
 *.tmp
+*.dll
 ipch/
 obj/
 [Bb]in
