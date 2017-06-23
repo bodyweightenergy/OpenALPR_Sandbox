@@ -34,7 +34,6 @@ namespace EmugCVSandbox
             lock (locker)
             {
                 taskQ.Enqueue(task);
-                Console.WriteLine(task.ToString() + " produced.");
                 Monitor.PulseAll(locker);
             }
         }
@@ -50,12 +49,10 @@ namespace EmugCVSandbox
                     task = taskQ.Dequeue();
                 }
                 if (task == null) return;         // This signals our exit
-                //Console.Write(task);
                 if (_consumeAction != null)
                 {
                     _consumeAction.Invoke(task);
                 }
-                Thread.Sleep(100);              // Simulate time-consuming task
             }
         }
     }
